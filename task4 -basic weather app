@@ -1,0 +1,82 @@
+from tkinter import *
+from tkinter import ttk
+import requests
+
+# List of cities
+cities = ["Anantapur","Chittoor","East Godavari","Ahmedabad","Amreli","Bharuch","Kheda (Nadiad)","Vadodara","Valsad","Surendranagar","Surat","Rajkot",
+          "Patan","Navsari","Narmada","Morbi","Mehsana","Junagadh","Jamnagar","Gir Somnath","Dahod","Dang","Devbhoomi Dwarka","Gandhinagar",
+          "Botad","Bhavn","Bilaspur","Chamba","Hamirpur","Kangra","Kinnaur","Kullu","Lahaul and Spiti","Mandi","Shimla","Sirmaur","Solan","Una",
+          "Bokaro","Chatra","Deoghar","Dhanbad","Dumka","Garhwa","Giridih","Godda","Gumla","Hazaribagh","Jamtara","Khunti","Koderma","Latehar",
+          "Lohardaga","Pakur","Palamu","Ramgarh","Ranchi","Sahibganj","Seraikela Kharsawan","Simdega","West Singhbhum","Bagalkot","Bangalore Rural",
+          "Bangalore Urban","Belgaum","Bellary","Bidar","Vijayapura","Chamarajanagar","Chikmagalur","Chitradurga","Dakshina Kannada","Davanagere",
+          "Dharwad","Gadag","Gulbarga","Hassan","Haveri","Kodagu","Kolar","Koppal","Mandya","Mysore","Raichur","Ramanagara","Shimoga","Tumkur",
+          "Udupi","Uttara Kannada","Yadgir","Alappuzha","Ernakulam","Idukki","Kannur","Kasaragod","Kollam","Kottayam","Kozhikode","Malappuram",
+          "Palakkad","Pathanamthitta","Thiruvananthapuram","Thrissur","Wayanad"]  # truncated for brevity
+
+# Function to get weather
+def get_weather():
+    city = com.get()
+    api_key = '253682c0bd759acfb4255d4aa08c3dd7'  
+    url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}'
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        # Extract weather info
+        temperature_kelvin = data['main']['temp']
+        temperature_celsius = temperature_kelvin - 273.15
+        temperature_fahrenheit = (temperature_kelvin - 273.15) * 9/5 + 32
+        humidity = data['main']['humidity']
+        weather_condition = data['weather'][0]['description']
+        wind_speed = data['wind']['speed']
+        pressure = data['main']['pressure']
+        country_code = data['sys']['country']
+        city_with_country = f"{city}, {country_code}"
+
+        result_label.config(text=f"City: {city_with_country}\nTemperature: {temperature_celsius:.2f} °C / {temperature_fahrenheit:.2f} °F\nHumidity: {humidity}%\nWeather: {weather_condition}\nWind Speed: {wind_speed} m/s\nPressure: {pressure} hPa")
+
+    except requests.exceptions.RequestException as e:
+        result_label.config(text=f"Error: {e}")
+    except KeyError:
+        result_label.config(text="Error: City not found or data format issue.")
+
+# Autocomplete functions
+def on_key_release(event):
+    value = event.widget.get()
+    matches = [city for city in cities if value.lower() in city.lower()] if value else []
+    listbox_update(matches)
+
+def listbox_update(matches):
+    listbox.delete(0, END)
+    for match in matches:
+        listbox.insert(END, match)
+
+def on_select(event):
+    if listbox.curselection():
+        selected_city = listbox.get(listbox.curselection())
+        com.set(selected_city)
+        listbox_update([])
+
+# GUI setup
+win = Tk()
+win.title("Weather App")
+win.config(bg="#f5f5f5")
+win.geometry("600x400")
+
+Label(win, text="Weather App", font=("Helvetica", 30, "bold"), fg="#333", bg="#f5f5f5").place(x=180, y=20)
+
+com = ttk.Combobox(win, values=cities, font=("Helvetica", 12))
+com.place(x=200, y=80, width=200)
+com.bind('<KeyRelease>', on_key_release)
+
+listbox = Listbox(win, font=("Helvetica", 12))
+listbox.place(x=200, y=105, width=200, height=100)
+listbox.bind('<<ListboxSelect>>', on_select)
+
+Button(win, text="Get Weather", font=("Helvetica", 12), bg="#4CAF50", fg="white", command=get_weather).place(x=250, y=220)
+
+result_label = Label(win, text="", font=("Helvetica", 12), wraplength=500, justify="left", bg="#f5f5f5")
+result_label.place(x=50, y=260)
+
+win.mainloop()
